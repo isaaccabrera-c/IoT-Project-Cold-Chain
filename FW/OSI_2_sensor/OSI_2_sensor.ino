@@ -1,63 +1,47 @@
-#include "Wire.h"
-#include "stdint.h"
+#include "PCT2075.h"
+#include <stdint.h>
+#include <Wire.h>
 
-#define SENSOR_BASE_ADDRESS 0x48
-#define NUM_SENSORS 8
-#define TEMP_REGISTER 0x00
-#define TEMP_READ_SIZE 0x02
-#define READING_PERIOD_ms 5000
+#define UART_BAUDRATE   115200
+#define I2C_CLK_SPEED   400000
+#define SMPLNG_PERIOD   1000
 
-int16_t reading = 0;
-float temperature = 0.0;
-uint8_t i = 0;
+uint8_t test_address = 0x48;
+int16_t test_reading = 0x0000;
+
+PCT2075 PCT2075_Mgr;
 
 void setup()
 {
-  Serial.begin(115200);
-  Wire.begin();
-
-  delay(1000);
-
-  /* Select Temp Register in all sensors */
-  for(i = 0; i < NUM_SENSORS; i++)
-  {
-    Wire.beginTransmission(SENSOR_BASE_ADDRESS | i);
-    Wire.write( byte(TEMP_REGISTER) );
-    Wire.endTransmission();
-  }
+    /* Setup UART */
+    Serial.begin(UART_BAUDRATE);
+    
+    /* Setup I2C */
+    Wire.begin();
+    Wire.setClock(I2C_CLK_SPEED);
+    
+    /* Test library */
+    PCT2075_Mgr.point2TempReg(test_address);
+    
+    /* NaN test */
+    delay(5000);
+    Serial.print("NaN test: ");
+    Serial.println( sqrt(-1) );
 }
 
 
 void loop()
 {
-  /* Sample Period*/
-  delay(READING_PERIOD_ms);
-
-  /* Iterate over all sensors */
-  for(i = 0; i < NUM_SENSORS; i++)
-  {
-    /* Request data */
-    Wire.requestFrom(SENSOR_BASE_ADDRESS | i, TEMP_READ_SIZE);
-
-    /* Blocking wait for response */
-    while( TEMP_READ_SIZE > Wire.available() );
-
-    /* Store response */
-    reading = Wire.read();  // receive high byte (overwrites previous reading)
-    reading = reading << 8;    // shift high byte to be high 8 bits
-    reading |= Wire.read(); // receive low byte as lower 8 bits
+    delay(SMPLNG_PERIOD);
+        
+    test_reading = PCT2075_Mgr.readTempReg(test_address);
     
-    /* Calculate temperature */
-    temperature = (float)((reading >> 5) * 0.125);
-
-    /* Print */
-    Serial.print("Sensor #");
-    Serial.print(i);
-    Serial.print(": ");
-    Serial.print(temperature);   // print the reading
-    Serial.println(" °C"); 
-  }
-
-  for(i = 0; i < 64; i++) Serial.print("*");
-  Serial.println("");
+    Serial.print("Sensor 0x");
+    Serial.print(test_address, HEX);
+    Serial.print(" : 0x");
+    Serial.print(test_reading, HEX);
+    Serial.print(" = ");
+    Serial.print( PCT2075_Mgr.decodeTempReg(test_reading) );
+    Serial.println(" °C");
+    Serial.println("********");
 }
