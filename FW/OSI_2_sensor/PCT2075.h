@@ -58,6 +58,6 @@ private:
 
 
 
-// #define NUM_SENSORS 8
+
 // #define TEMP_READ_SIZE 0x02
 // #define I2C_clockFrequency 400000
