@@ -18,6 +18,7 @@ app.get('/temp', (req, res) => {
 
 app.post('/', (req, res) => {
     let tempTime = req.body.date;
+    let sensorId = req.body.sensorId;
     let temperature = parseInt(req.body.temp);
     let timeSplit = tempTime.split(" ");
     let day = timeSplit[0].replace(',', '');
@@ -30,6 +31,7 @@ app.post('/', (req, res) => {
     console.log(temperature +" "+ tempTime)
 
     res.send({
+        "id":sensorId,
         "temp": temperature,
         "date": {
             "day": day,
@@ -43,7 +45,11 @@ app.post('/', (req, res) => {
     })
 })
 
-
+// {  	
+//     "id":"0x48",
+//    "temp":"25",
+//   "date":"Monday, March 22 2021 19:39:17"
+// }
 app.listen(8080, function () {
     console.log('app is running in http://localhost:8080')
 })
