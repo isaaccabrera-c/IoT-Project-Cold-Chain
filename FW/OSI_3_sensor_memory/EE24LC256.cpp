@@ -51,7 +51,7 @@ uint8_t EE24LC256::read(uint16_t EE24LC256_cell_address, uint8_t data_size, uint
     Wire.requestFrom(_I2C_device_address, data_size);
     
     /* Wait for response to arrive */
-    delay( EE24LC256_I2C_TIMEOUT_FOR(data_size) );
+    delayMicroseconds( EE24LC256_I2C_TIMEOUT_FOR(data_size) );
     
     /* Check if the right amount of data was received */
     if( Wire.available() < data_size )
@@ -95,7 +95,7 @@ uint8_t EE24LC256::write(uint16_t EE24LC256_cell_address, uint8_t data_size, uin
     retVal |= Wire.endTransmission();
     
     /* Wait for response to arrive */
-    delay( EE24LC256_I2C_TIMEOUT_FOR(data_size) );
+    delayMicroseconds( EE24LC256_I2C_TIMEOUT_FOR(data_size) );
     
     /* Re-enable Write Protect (WP) */
     digitalWrite(_WP_pin, EE24LC256_WP_EN);
@@ -147,13 +147,13 @@ uint8_t EE24LC256::dump(void)
 
 uint8_t EE24LC256::erase(void)
 {   
-    /* Initialize _TXN_buffer with EE24LC256_ERASE_VALUE */
-    for(uint8_t i = 0; i < EE24LC256_I2C_BUFFER_SIZE; i++) _TXN_buffer[i] = EE24LC256_ERASE_VALUE;
-    
     /* Block size */
     uint8_t block_size = EE24LC256_I2C_BUFFER_SIZE;
     /* Return code from I2C transaction */
     uint8_t retVal = 0;
+
+    /* Initialize _TXN_buffer with EE24LC256_ERASE_VALUE */
+    for(uint8_t i = 0; i < EE24LC256_I2C_BUFFER_SIZE; i++) _TXN_buffer[i] = EE24LC256_ERASE_VALUE;
     
     #if EE24LC256_NEED_LAST_READ_COMP
     /* Auxiliary variable to hold the starting address of the last reading */

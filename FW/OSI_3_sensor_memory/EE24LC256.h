@@ -19,10 +19,10 @@
 #include <stdint.h>
 
 
-/* Base I2C timeout (ms) for every transaction */
-#define EE24LC256_I2C_TIMEOUT_BASE      1
-/* I2C timeout (ms) for the specified transaction size */
-#define EE24LC256_I2C_TIMEOUT_FOR(x)    ( EE24LC256_I2C_TIMEOUT_BASE * (x + 1) )
+/* Base I2C timeout (us) for every transaction */
+#define EE24LC256_I2C_TIMEOUT_BASE      200
+/* I2C timeout (us) for the specified transaction size */
+#define EE24LC256_I2C_TIMEOUT_FOR(x)    ( EE24LC256_I2C_TIMEOUT_BASE * (x + 3) )
 
 /* Logical value on WP that enables writting operation */
 #define EE24LC256_WP_DIS                LOW
