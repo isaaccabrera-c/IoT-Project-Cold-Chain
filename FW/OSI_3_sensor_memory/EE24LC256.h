@@ -19,12 +19,12 @@
 #include <stdint.h>
 
 
-/* Buffer size for I2C transactions */
-#define EE24LC256_I2C_BUFFER_SIZE       28
+/* Buffer size for I2C transactions */  //NOTE: Must be a power of 2 because EE24LC256 only increments the lower 6 bytes (no carry) of address pointer on write operations!
+#define EE24LC256_I2C_BUFFER_SIZE       16
 /* Base I2C timeout (ms) for every transaction */
 #define EE24LC256_I2C_TIMEOUT_BASE      1
 /* I2C timeout (ms) for the specified transaction size */
-#define EE24LC256_I2C_TIMEOUT_FOR(x)    ( EE24LC256_I2C_TIMEOUT_BASE * (x + 3) )
+#define EE24LC256_I2C_TIMEOUT_FOR(x)    ( EE24LC256_I2C_TIMEOUT_BASE * (x + 1) )
 /* Logical value on WP that enables writting operation */
 #define EE24LC256_WP_DIS                LOW
 /* Logical value on WP that disables writting operation */
@@ -34,19 +34,22 @@
 /* Maximum memory address */
 #define EE24LC256_MEM_MAX_ADDR          (EE24LC256_MEM_SIZE - 1)
 /* Blank value to erase memory with */
-#define EE24LC256_ERASE_VALUE           0xFF
+#define EE24LC256_ERASE_VALUE           0xAF
 /* EE24LC256 error codes */
 #define EE24LC256_ERROR_PASS            0x00    //Successful request
 #define EE24LC256_ERROR_OUT_OF_RANGE    0x10    //Request out of memory range
 #define EE24LC256_ERROR_TOO_LARGE       0x20    //Request is too large to be processed
-#define EE24LC256_ERROR_FAILED_TXN      0x30    //Failed I2C transaction
+#define EE24LC256_ERROR_BAD_TXN         0x30    //Failed I2C transaction
+#define EE24LC256_ERROR_BAD_ERASE_W     0x40    //EEPROM could not be erased because one writting failed
+#define EE24LC256_ERROR_BAD_ERASE_R     0x50    //EEPROM could not be erased because one reading failed
+#define EE24LC256_ERROR_BAD_ERASE_X     0x60    //EEPROM could not be erased because reading and writting did not match
 
 
 
 /* Macro to read the low byte of a 16 bit word */
-#define LO_BYTE(x)  ( (uint8_t)( 0x00FF & x ) )
+#define LO_BYTE(x)  ( (uint8_t) (0x00FF & (x)) )
 /* Macro to read the high byte of a 16 bit word */
-#define HI_BYTE(x)  LO_BYTE(x >> 8)
+#define HI_BYTE(x)  ( (uint8_t) (0x00FF & (x >> 8)) )
 
 
 
@@ -90,10 +93,21 @@ public:
     * @brief Dump the entire content of EEPROM into serial console
     * @return Returns:
                 Wire.endTransmission completion code as stated at https://www.arduino.cc/en/Reference/WireEndTransmission
-                When an invalid completion code is received, execution is aborted
+                OR'ed with
+                EE24LC256 lib error signal
+                Note: When an invalid completion code is received, execution is aborted
     */    
     uint8_t dump(void);
-        
+    
+    /*!
+    * @brief Erase whole memory into EE24LC256_ERASE_VALUE
+    * @return Returns:
+                Wire.endTransmission completion code as stated at https://www.arduino.cc/en/Reference/WireEndTransmission
+                OR'ed with
+                EE24LC256 lib error signal
+                Note: When an invalid completion code is received, execution is aborted
+    */    
+    uint8_t erase(void);
 
 
 private:

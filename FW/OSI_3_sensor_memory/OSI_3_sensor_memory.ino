@@ -44,31 +44,22 @@ void setup()
         PCT2075_Mgr.point2TempReg( PCT2075_device_list[i] );
     }
     
-    
-    //Write into cells 3,4 a 0x23
+    /* Test erase */
     delay(3000);
-    uint8_t test_write_data[2] = {8,9};
-    uint8_t write_cc = 0xAB;
-    write_cc = EEPROM_DB.write( ((uint16_t) (0x0003)), ((uint8_t) (2)), test_write_data);
-    Serial.print("Writting cc = 0x");
-    Serial.println(write_cc, HEX);
+    Serial.println("Erase begin");
+    uint8_t test_erase_cc = 0;
+    test_erase_cc = EEPROM_DB.erase();
+    Serial.print("Erase cc = 0x");
+    Serial.println(test_erase_cc, HEX);
+    Serial.println("Erase end");
     
-    
-    uint8_t test_cc = 0;
-    test_cc = EEPROM_DB.dump();
-    Serial.print("Memory Dump RetCode = 0x");
-    Serial.print(test_cc, HEX);
+    /* Test dump */
+    uint8_t test_dump_cc = 0;
+    test_dump_cc = EEPROM_DB.dump();
+    Serial.print("Dump cc = 0x");
+    Serial.print(test_dump_cc, HEX);
     Serial.println("");
-    
-    // uint8_t test_data = 0;
-    // uint16_t test_addr = 0x0ABC;
-    // Serial.print("Reading address: 0x");
-    // Serial.print(test_addr, HEX);
-    // Serial.print("    Reading retcode = 0x");
-    // Serial.print( EEPROM_DB.read(test_addr, 1, &test_data), HEX );
-    // Serial.print("    Reading data = 0x");
-    // Serial.print( test_data, HEX );
-    // Serial.println("");
+ 
     
     // while(-1);
 }

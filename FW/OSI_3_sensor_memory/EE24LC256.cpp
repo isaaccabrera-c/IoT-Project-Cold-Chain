@@ -57,7 +57,7 @@ uint8_t EE24LC256::read(uint16_t EE24LC256_cell_address, uint8_t data_size, uint
     if( Wire.available() < data_size )
     {
         /* Signal error code */
-        retVal |= EE24LC256_ERROR_FAILED_TXN;   
+        retVal |= EE24LC256_ERROR_BAD_TXN;   
     }
     else
     {
@@ -106,39 +106,110 @@ uint8_t EE24LC256::write(uint16_t EE24LC256_cell_address, uint8_t data_size, uin
 
 uint8_t EE24LC256::dump(void)
 {
-    /* Memory space to store each reading */
-    uint8_t reading[EE24LC256_I2C_BUFFER_SIZE] = {0};
+    /* Memory space to store each reading data */
+    uint8_t reading_data[EE24LC256_I2C_BUFFER_SIZE] = {0};
     /* Reading size */
     uint8_t reading_size = EE24LC256_I2C_BUFFER_SIZE;
     /* Return code from I2C transaction */
     uint8_t retVal = 0;
     
+    /* Auxiliary variable to hold the starting address of the last reading */
     static const uint16_t max_addr_minus_buff_size = EE24LC256_MEM_MAX_ADDR - EE24LC256_I2C_BUFFER_SIZE;
     
     /* Iterate over all memory cells */
     for(uint16_t start_addr = 0; start_addr < EE24LC256_MEM_SIZE; start_addr += EE24LC256_I2C_BUFFER_SIZE)
     {   
-        /* Adjust for last reading size */
+        /* Adjust for last reading */
         if(max_addr_minus_buff_size < start_addr )
         {
             reading_size = EE24LC256_MEM_SIZE - start_addr;
         }
     
         /* Read from device */
-        retVal |= read(start_addr, reading_size, reading);
+        retVal |= read(start_addr, reading_size, reading_data);
         
         /* Break if failure */
-        if(retVal) break;
+        if(0 != retVal) break;
         
-        /* Print reading */
+        /* Print reading_data */
         for(uint8_t i = 0; i < reading_size; i++)
         {
             Serial.print("EEPROM @0x");
             Serial.print(start_addr + i, HEX);
             Serial.print(" = 0x");
-            Serial.println(reading[i], HEX);
+            Serial.println(reading_data[i], HEX);
         }
     }
     
     return retVal;
 }
+
+
+uint8_t EE24LC256::erase(void)
+{
+    /* Loop iterator */
+    uint8_t i = 0;
+    
+    /* Memory space to store an "erased" memory block */
+    static uint8_t block_data[EE24LC256_I2C_BUFFER_SIZE] = {0};
+    /* Initialize array */
+    for(i = 0; i < EE24LC256_I2C_BUFFER_SIZE; i++) block_data[i] = EE24LC256_ERASE_VALUE;
+    
+    /* Block size */
+    uint8_t block_size = EE24LC256_I2C_BUFFER_SIZE;
+    /* Return code from I2C transaction */
+    uint8_t retVal = 0;
+    
+    /* Auxiliary variable to hold the starting address of the last reading */
+    static const uint16_t max_addr_minusblock_data_size = EE24LC256_MEM_MAX_ADDR - EE24LC256_I2C_BUFFER_SIZE;
+    
+    /* Iterate over all memory cells */
+    for(uint16_t start_addr = 0; start_addr < EE24LC256_MEM_SIZE; start_addr += EE24LC256_I2C_BUFFER_SIZE)
+    {   
+        /* Adjust for last block */
+        if(max_addr_minusblock_data_size < start_addr )
+        {
+            block_size = EE24LC256_MEM_SIZE - start_addr;
+        }
+        
+        /* Write into device */
+        retVal |= write(start_addr, block_size, block_data);
+        
+        /* Handle bad writtings */
+        if(0 != retVal)
+        {
+            /* Add EE24LC256 error code */
+            retVal |= EE24LC256_ERROR_BAD_ERASE_W;
+            /* Abort immediately */
+            return retVal;
+        }
+    
+        /* Read from device */
+        retVal |= read(start_addr, block_size, block_data);
+        
+        /* Handle bad readings */
+        if(0 != retVal)
+        {
+            /* Add EE24LC256 error code */
+            retVal |= EE24LC256_ERROR_BAD_ERASE_R;
+            /* Abort immediately */
+            return retVal;
+        }
+        
+        /* Verify reading */
+        for(i = 0; i < block_size; i++)
+        {
+            /* Handle missmatches */
+            if(EE24LC256_ERASE_VALUE != block_data[i])
+            {
+                /* Add EE24LC256 error code */
+                retVal |= EE24LC256_ERROR_BAD_ERASE_X;
+                /* Abort immediately */
+                return retVal;
+            }
+        }
+    }
+    
+    return retVal;
+}
+
