@@ -19,22 +19,29 @@
 #include <stdint.h>
 
 
-/* Buffer size for I2C transactions */  //NOTE: Must be a power of 2 because EE24LC256 only increments the lower 6 bytes (no carry) of address pointer on write operations!
-#define EE24LC256_I2C_BUFFER_SIZE       16
 /* Base I2C timeout (ms) for every transaction */
 #define EE24LC256_I2C_TIMEOUT_BASE      1
 /* I2C timeout (ms) for the specified transaction size */
 #define EE24LC256_I2C_TIMEOUT_FOR(x)    ( EE24LC256_I2C_TIMEOUT_BASE * (x + 1) )
+
 /* Logical value on WP that enables writting operation */
 #define EE24LC256_WP_DIS                LOW
 /* Logical value on WP that disables writting operation */
 #define EE24LC256_WP_EN                 (~EE24LC256_WP_DIS)
+
 /* Memory size in bytes */
 #define EE24LC256_MEM_SIZE              0x8000
 /* Maximum memory address */
 #define EE24LC256_MEM_MAX_ADDR          (EE24LC256_MEM_SIZE - 1)
+
+/* Buffer size for I2C transactions */  //NOTE: Must be a power of 2 because EE24LC256 only increments the lower 6 bytes (no carry) of address pointer on write operations!
+#define EE24LC256_I2C_BUFFER_SIZE       16
+/* State the need for last reading compensation if memory size is not divisible by buffer size */
+#define EE24LC256_NEED_LAST_READ_COMP   ( 0 != (EE24LC256_MEM_SIZE % EE24LC256_I2C_BUFFER_SIZE) )
+
 /* Blank value to erase memory with */
-#define EE24LC256_ERASE_VALUE           0xAF
+#define EE24LC256_ERASE_VALUE           0xCC
+
 /* EE24LC256 error codes */
 #define EE24LC256_ERROR_PASS            0x00    //Successful request
 #define EE24LC256_ERROR_OUT_OF_RANGE    0x10    //Request out of memory range
@@ -113,8 +120,10 @@ public:
 private:
     /* I2C device address */
     uint8_t _I2C_device_address;
-    /* Pin */
+    /* Pin for WP */
     uint8_t _WP_pin;
+    /* Buffer to swipe memory */
+    uint8_t _TXN_buffer[EE24LC256_I2C_BUFFER_SIZE];
 };
 
 

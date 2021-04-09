@@ -8,10 +8,16 @@
 #define UART_BAUDRATE       115200
 /* Clockspeed for I2C communication */
 #define I2C_CLK_SPEED_Hz    400000
-/* Sensor sampling period in milli-seconds */
-#define SAMPLNG_PERIOD_ms   1000
+
 /* Number of PCT2075 devices in circuit */
 #define PCT2075_NUM_DEVICES 8
+/* Sensor sampling period in milli-seconds */
+#define SAMPLNG_PERIOD_ms   1000
+
+/* EEPROM I2C device address */
+#define EEPROM_DB_I2C_ADDR  0x50
+/* Pin used for EEPROM WriteProtect security operations */
+#define EEPROM_DB_WP_pin    15
 
 
 /* List of I2C addresses of PCT2075 devices on circuit */
@@ -26,7 +32,7 @@ uint8_t i = 0;
 PCT2075_Mngmt PCT2075_Mgr;
 
 /* EE24LC256 instance */
-EE24LC256 EEPROM_DB(0x50, 15);
+EE24LC256 EEPROM_DB(EEPROM_DB_I2C_ADDR, EEPROM_DB_WP_pin);
 
 
 void setup()
