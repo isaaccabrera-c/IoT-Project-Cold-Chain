@@ -20,7 +20,7 @@
 
 
 /* I2C timeout (ms) */
-#define PCT2075_I2C_TIMEOUT             5
+#define PCT2075_I2C_TIMEOUT             1
 
 /* Temperature register address inside sensor */
 #define PCT2075_TEMP_REG_ADDR           0x00
@@ -72,8 +72,6 @@ public:
     float decodeTempReg(int16_t PCT2075_Temp_reg_reading);
 
 private:
-    /* Set the timestamp (regarding millis() function ) at which an I2C timeout will be declared */
-    uint32_t _I2C_timeout_deadline;
     /* Set the defult invalid temperature value */
     float _nan;
     /* Store the last temperature register reading */
