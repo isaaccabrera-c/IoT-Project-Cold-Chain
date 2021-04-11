@@ -1,3 +1,4 @@
+#include "EE24LC256.h"
 #include "PCT2075.h"
 #include <stdint.h>
 #include <Wire.h>
@@ -7,10 +8,16 @@
 #define UART_BAUDRATE       115200
 /* Clockspeed for I2C communication */
 #define I2C_CLK_SPEED_Hz    400000
-/* Sensor sampling period in milli-seconds */
-#define SAMPLNG_PERIOD_ms   1000
+
 /* Number of PCT2075 devices in circuit */
 #define PCT2075_NUM_DEVICES 8
+/* Sensor sampling period in milli-seconds */
+#define SAMPLNG_PERIOD_ms   1000
+
+/* EEPROM I2C device address */
+#define EEPROM_DB_I2C_ADDR  0x50
+/* Pin used for EEPROM WriteProtect security operations */
+#define EEPROM_DB_WP_pin    15
 
 
 /* List of I2C addresses of PCT2075 devices on circuit */
@@ -23,6 +30,9 @@ uint8_t i = 0;
 
 /* PCT2075 manager instance of management class */
 PCT2075_Mngmt PCT2075_Mgr;
+
+/* EE24LC256 instance */
+EE24LC256 EEPROM_DB(EEPROM_DB_I2C_ADDR, EEPROM_DB_WP_pin);
 
 
 void setup()
@@ -40,6 +50,24 @@ void setup()
         PCT2075_Mgr.point2TempReg( PCT2075_device_list[i] );
     }
     
+    /* Test erase */
+    delay(3000);
+    Serial.println("Erase begin");
+    uint8_t test_erase_cc = 0;
+    test_erase_cc = EEPROM_DB.erase();
+    Serial.print("Erase cc = 0x");
+    Serial.println(test_erase_cc, HEX);
+    Serial.println("Erase end");
+    
+    /* Test dump */
+    uint8_t test_dump_cc = 0;
+    test_dump_cc = EEPROM_DB.dump();
+    Serial.print("Dump cc = 0x");
+    Serial.print(test_dump_cc, HEX);
+    Serial.println("");
+ 
+    
+    // while(-1);
 }
 
 

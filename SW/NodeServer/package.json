@@ -4,8 +4,11 @@
   "description": "arduino http conection with cloud ECR instance",
   "main": "index.js",
   "dependencies": {
+    "aws-sdk": "^2.884.0",
     "cors": "^2.8.5",
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "plotly.js-dist": "^1.58.4",
+    "statistics.js": "^1.0.0"
   },
   "devDependencies": {},
   "scripts": {
