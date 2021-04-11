@@ -1,6 +1,10 @@
 const express = require('express')
 const path = require('path')
 const cors = require('cors')
+const data = require('./temperatureData')
+const Statistics = require('statistics.js');
+//const Plotly = require('plotly.js-dist');
+
 //import libraires
 
 const app = express()
@@ -13,7 +17,7 @@ app.use(express.urlencoded({ extended: true }))
 //get method template for futher features
 app.get('/temp', (req, res) => {
     res.statusCode = 200;
-    res.send({ "status": "estoy bien" })
+    res.json(data);
 
 })
 
@@ -52,7 +56,12 @@ app.post('/', (req, res) => {
 //    "temp":"25",
 //   "date":"Monday, March 22 2021 19:39:17"
 // }
-//this app is running on port 8080 in order to integrate with docker
+let array = data.coldChain.temperature
+for(i in array){
+    console.log(array[i])
+}
+
+
 app.listen(8080, function () {
     console.log('app is running in http://localhost:8080')
 })
