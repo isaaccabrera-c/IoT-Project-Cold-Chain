@@ -4,6 +4,40 @@ const cors = require('cors')
 const data = require('./temperatureData')
 const Statistics = require('statistics.js');
 //const Plotly = require('plotly.js-dist');
+var AWS = require('aws-sdk');
+
+var s3 = new AWS.S3();
+
+// Los nombres de buckets deben ser únicos entre todos los usuarios de S3
+
+// var myBucket = 'my.unique.bucket.name';
+
+// var myKey = 'myBucketKey'
+
+// var ddb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
+
+// var params = {
+//   ExpressionAttributeValues: {
+//     ':s': {N: '2'},
+//     ':e' : {N: '09'},
+//     ':topic' : {S: 'PHRASE'}
+//   },
+//   KeyConditionExpression: 'Season = :s and Episode > :e',
+//   ProjectionExpression: 'Episode, Title, Subtitle',
+//   FilterExpression: 'contains (Subtitle, :topic)',
+//   TableName: 'EPISODES_TABLE'
+// };
+
+// ddb.query(params, function(err, data) {
+//   if (err) {
+//     console.log("Error", err);
+//   } else {
+//     //console.log("Success", data.Items);
+//     data.Items.forEach(function(element, index, array) {
+//       console.log(element.Title.S + " (" + element.Subtitle.S + ")");
+//     });
+//   }
+// });
 
 //import libraires
 
@@ -56,10 +90,10 @@ app.post('/', (req, res) => {
 //    "temp":"25",
 //   "date":"Monday, March 22 2021 19:39:17"
 // }
-let array = data.coldChain.temperature
-for(i in array){
-    console.log(array[i])
-}
+// let array = data.coldChain.temperature
+// for(i in array){
+//     console.log(array[i])
+// }
 
 
 app.listen(8080, function () {
