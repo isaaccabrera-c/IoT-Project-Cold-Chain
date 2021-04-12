@@ -20,7 +20,7 @@
 
 
 /* Base I2C timeout (us) for every transaction */
-#define EE24LC256_I2C_TIMEOUT_BASE      200
+#define EE24LC256_I2C_TIMEOUT_BASE      250
 /* I2C timeout (us) for the specified transaction size */
 #define EE24LC256_I2C_TIMEOUT_FOR(x)    ( EE24LC256_I2C_TIMEOUT_BASE * (x + 3) )
 
@@ -40,7 +40,7 @@
 #define EE24LC256_NEED_LAST_READ_COMP   ( 0 != (EE24LC256_MEM_SIZE % EE24LC256_I2C_BUFFER_SIZE) )
 
 /* Blank value to erase memory with */
-#define EE24LC256_ERASE_VALUE           0xCC
+#define EE24LC256_ERASE_VALUE           0xEE
 
 /* EE24LC256 error codes */
 #define EE24LC256_ERROR_PASS            0x00    //Successful request
