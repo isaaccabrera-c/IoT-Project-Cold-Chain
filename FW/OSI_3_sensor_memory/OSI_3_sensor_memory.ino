@@ -142,6 +142,7 @@ void loop()
     if(1000*30 < millis())
     {
         /* Dump memory */
+        delay(10);
         uint8_t dump_cc = EEPROM_DB.dump();
         Serial.print("Dump cc = 0x");
         Serial.println(dump_cc, HEX);
