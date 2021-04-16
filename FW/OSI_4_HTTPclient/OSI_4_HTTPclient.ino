@@ -1,6 +1,7 @@
 ////////////////Libraries///////////////////////////////////////
-#include "mailman.h"
+#include "appSend2Server.h"
 #include "EE24LC256.h"
+#include "myCredentials.h"
 #include "PCT2075.h"
 #include <stdint.h>
 #include <Wire.h>
@@ -69,10 +70,20 @@ void setup()
     Wire.begin();
     Wire.setClock(I2C_CLK_SPEED_Hz);
     
-    // /* Test */
+    /* Setup Wifi */
+    WiFi.begin(mySSID, myPSWD);
+    Serial.println("Connecting");
+    while(WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println("");
+    Serial.print("Connected to WiFi network with IP Address: ");
+    Serial.println(WiFi.localIP());
+    
+    /* Test */
     delay(2000);
-    // Serial.print("TempRecord_t = ");
-    // Serial.println( sizeof(TempRecord_t) );
+    TestJASON();
     
     /* Set pointer register of all listed PCT2075 devices to point towards Temperature register */
     Serial.println("Sensor Setup:   BEGIN");
@@ -92,13 +103,13 @@ void setup()
     }
     Serial.println("Sensor Setup:   DONE");
     
-    /* Erase memory */
-    Serial.println("Memory Erase:   BEGIN");
-    uint8_t memory_erase_cc = EEPROM_DB.erase();
-    Serial.print("Memory Erase:   ");
-    Serial.print( 0 == memory_erase_cc ? "PASS" : "FAIL" );
-    Serial.print("  cc = 0x");
-    Serial.println(memory_erase_cc, HEX);
+    // /* Erase memory */
+    // Serial.println("Memory Erase:   BEGIN");
+    // uint8_t memory_erase_cc = EEPROM_DB.erase();
+    // Serial.print("Memory Erase:   ");
+    // Serial.print( 0 == memory_erase_cc ? "PASS" : "FAIL" );
+    // Serial.print("  cc = 0x");
+    // Serial.println(memory_erase_cc, HEX);
     
     /* Initialize record */
     singleTempRecord.timestamp_unix_epoch   = millis();
