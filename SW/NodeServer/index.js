@@ -2,8 +2,7 @@ const express = require('express')
 const path = require('path')
 const cors = require('cors')
 const data = require('./temperatureData')
-const Statistics = require('statistics.js');
-//const Plotly = require('plotly.js-dist');
+
 var AWS = require('aws-sdk');
 
 var s3 = new AWS.S3();

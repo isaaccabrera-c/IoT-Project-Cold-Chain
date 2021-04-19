@@ -1,4 +1,5 @@
 <!doctype html>
+<script data-require="chart.js@*" data-semver="1.0.2" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script>
 <html lang="en">
 
 <head>
@@ -14,7 +15,7 @@
 
 <body>
   <div>Hola mundo</div>
-
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <p id="temp">
     <!-- <script>
       const data = require('./temperatureData')
@@ -28,6 +29,39 @@
       Plotly.newPlot('temp', datos);
     </script> -->
   </p>
+  <canvas id="temp" width="600" height="400"></canvas>
+  <script>
+  var Chart = require('chart.js');
+  var tempData = {
+  	labels : ["10:00","10:10","10:20","10:30","10:40","10:50"],
+  	datasets : [
+  		{
+  			fillColor : "rgba(172,194,132,0.4)",
+  			strokeColor : "#ACC26D",
+  			pointColor : "#fff",
+  			pointStrokeColor : "#9DB86D",
+  			data : [20,15,9,21,30,24]
+  			
+  		}
+  	]
+  }
+
+  var temp = document.getElementById('temp').getContext('2d');
+  Chart(temp).Line(tempData, {
+    animation: true,
+    animationSteps: 100,
+    animationEasing: "easeOutQuart",
+    scaleFontSize: 16,
+    responsive: true,
+    showTooltip: true,
+    tooltipTemplate: "<%if (label){%><%=label%>: <%}%><%= value %>",
+    
+    scaleShowGridLines : false,
+    bezierCurve : false,
+    pointDotRadius : 5,
+
+  });
+</script>
 
   <!-- Optional JavaScript -->
   <!-- jQuery first, then Popper.js, then Bootstrap JS -->
