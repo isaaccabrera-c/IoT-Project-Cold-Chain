@@ -20,16 +20,15 @@ static char myJsonString[TOTAL_JSON_CHARS+1];
 
 
 
-
-JSONmgr::JSONmgr(void)
+GatewayInterposer::GatewayInterposer(void)
 {
+    /* Initialize http handler */
+    _http.begin(API_GATEWAY_URL);
+    _http.addHeader("Content-Type", "application/json");
     /* Reset Json string */
     reset();
-    /* Initialize http handler */
-    _http.begin("https://ij60i8kpw0.execute-api.us-east-1.amazonaws.com/prod/api/coldchain");
-    _http.addHeader("Content-Type", "application/json");
 }
-void JSONmgr::reset(void)
+void GatewayInterposer::reset(void)
 {
     /* Initialize pointer to Json string */
     _JsonStr_ptr = myJsonString;
@@ -61,11 +60,21 @@ void JSONmgr::reset(void)
     
     /* Reset pointer to Json string */
     _JsonStr_ptr = myJsonString;
+    
+    /* Set size to 0 */
+    setSize(0);
 }
 
-
-void JSONmgr::setSize(uint8_t size)
+uint8_t GatewayInterposer::getSize(void)
 {
+    return _size;
+}
+
+void GatewayInterposer::setSize(uint8_t size)
+{
+    /* Set the beginning of json string to '[' */
+    _JsonStr_ptr[0] = '[';
+    
     /* Set all beginings of objects to '{' */
     for(uint8_t i = 0; i < NUM_JSON_OBJ; i++)
     {
@@ -78,48 +87,57 @@ void JSONmgr::setSize(uint8_t size)
         _JsonStr_ptr[ JSON_OBJ_OFFSET(i) - 1 ] = ',';
     }
     
-    /* Set the next comma to a closing bracket */
-    _JsonStr_ptr[ JSON_OBJ_OFFSET(size) - 1 ] = ']';
-    
-    /* Set the next begining of object to a null character */
-    _JsonStr_ptr[ JSON_OBJ_OFFSET(size) ] = '\0';
+    if(0 == size)
+    {
+        /* Special case: print '!' */
+        _JsonStr_ptr[0] = '!';
+        _JsonStr_ptr[1] = '\0';
+    }
+    else
+    {
+        /* Set the next comma to a closing bracket */
+        _JsonStr_ptr[ JSON_OBJ_OFFSET(size) - 1 ] = ']';
+        
+        /* Set the next begining of object to a null character */
+        _JsonStr_ptr[ JSON_OBJ_OFFSET(size) ] = '\0';
+    }
     
     /* Record size */
     _size = size;
 }
-void JSONmgr::setTravelID(uint8_t objNum, uint16_t travelID)
+void GatewayInterposer::setTravelID(uint8_t objNum, uint16_t travelID)
 {
     /* Print travel ID into selected json object */
     printHEX16(travelID, TRAVELID_OFFSET(objNum) + myJsonString);
 }
-void JSONmgr::setSensorID(uint8_t objNum, uint8_t  sensorID)
+void GatewayInterposer::setSensorID(uint8_t objNum, uint8_t  sensorID)
 {
     /* Print sensor ID into selected json object */
     printHEX8(sensorID, SENSORID_OFFSET(objNum) + myJsonString);
 }
-void JSONmgr::setTempture(uint8_t objNum, uint16_t tempture)
+void GatewayInterposer::setTempture(uint8_t objNum, uint16_t tempture)
 {
     /* Print temperature into selected json object */
     printHEX16(tempture, TEMPTURE_OFFSET(objNum) + myJsonString);
 }
-void JSONmgr::setTimestmp(uint8_t objNum, uint32_t timestmp)
+void GatewayInterposer::setTimestmp(uint8_t objNum, uint32_t timestmp)
 {
     /* Print timestamp into selected json object */
     printHEX32(timestmp, TIMESTMP_OFFSET(objNum) + myJsonString);
 }
 
 
-uint8_t JSONmgr::post(void)
+uint8_t GatewayInterposer::post(void)
 {
     return _http.POST(myJsonString);
 }
 
 
-void JSONmgr::printJson(void)
+void GatewayInterposer::printJson(void)
 {
     Serial.println( _JsonStr_ptr );
 }
-void JSONmgr::printHEX8(uint8_t data, char* destination)
+void GatewayInterposer::printHEX8(uint8_t data, char* destination)
 {
     uint8_t numNibbles = 2;
     
@@ -129,7 +147,7 @@ void JSONmgr::printHEX8(uint8_t data, char* destination)
         data = data >> 4;
     }
 }
-void JSONmgr::printHEX16(uint16_t data, char* destination)
+void GatewayInterposer::printHEX16(uint16_t data, char* destination)
 {
     uint8_t numNibbles = 4;
     
@@ -139,7 +157,7 @@ void JSONmgr::printHEX16(uint16_t data, char* destination)
         data = data >> 4;
     }
 }
-void JSONmgr::printHEX32(uint32_t data, char* destination)
+void GatewayInterposer::printHEX32(uint32_t data, char* destination)
 {
     uint8_t numNibbles = 8;
     
@@ -148,32 +166,4 @@ void JSONmgr::printHEX32(uint32_t data, char* destination)
         destination[numNibbles - i - 1] = hex2str[0x0F & data];
         data = data >> 4;
     }
-}
-
-
-
-void TestJASON(void)
-{
-    JSONmgr JsonTest;
-    
-    for(uint8_t j = 0; j < 64; j++) Serial.print("$");
-    
-    Serial.println("");
-    Serial.print("Number of bytes in string: ");
-    Serial.println( TOTAL_JSON_CHARS );
-    
-    // JsonTest.setTravelID(0, 0xCAFE);
-    // JsonTest.setSensorID(0, 0x70);
-    // JsonTest.setTempture(0, 0x1E00);
-    // JsonTest.setTimestmp(0, ((uint32_t)( millis() )) );
-    // JsonTest.setSize(1);
-    JsonTest.printJson();
-    uint8_t cc = 0;
-    cc = JsonTest.post();
-    Serial.println("");
-    Serial.print("POST cc = 0x");
-    Serial.println(cc,HEX);
-    
-    for(uint8_t k = 0; k < 64; k++) Serial.print("$");
-    Serial.println("");
 }
