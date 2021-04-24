@@ -1,47 +1,70 @@
+#include "myCredentials.h"
+#include <stdint.h>
+#include <time.h>
 #include <WiFi.h>
-#include "time.h"
 
-const char* SSID_NAME = "Isaac";
-const char* PASSWORD   = "12345678";
-const char* NTP_SERVER = "time.google.com";//"pool.ntp.org";
-const int UTC_OFFSET = -6;
-const long  UTC_OFFSET_IN_SEC = UTC_OFFSET * 60 * 60;
-const int   DAY_LIGHT_OFFSET_SEC = 0 * 60 * 60;
+/* NTP server URL */
+const char ntpServer [] = "time.google.com";//"pool.ntp.org";
+/* Variable to save current epoch time */
+uint32_t epochTime; 
 
-void printLocalTime()
-{
-  struct tm timeinfo;
-  if(!getLocalTime(&timeinfo)){
-    Serial.println("Failed to obtain time");
-    return;
-  }
-  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-}
+
+/* Function prototypes */
+void printLocalTime(void);
+
 
 void setup()
 {
-  Serial.begin(115200);
-  
-  //connect to WiFi
-  Serial.printf("Connecting to %s ", SSID_NAME);
-  WiFi.begin(SSID_NAME, PASSWORD);
-  while (WiFi.status() != WL_CONNECTED) {
+    /* Initialize serial communicaion */
+    Serial.begin(115200);
+
+    //connect to WiFi
+    Serial.printf("Connecting to %s ", mySSID);
+    WiFi.begin(mySSID, myPSWD);
+    while (WiFi.status() != WL_CONNECTED) {
       delay(500);
       Serial.print(".");
-  }
-  Serial.println(" CONNECTED");
-  
-  //init and get the time
-  configTime(UTC_OFFSET_IN_SEC, DAY_LIGHT_OFFSET_SEC, NTP_SERVER);
-  printLocalTime();
-
-  //disconnect WiFi as it's no longer needed
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
+    }
+    Serial.println(" CONNECTED");
+    
+    /* Configure ntp server */
+    configTime(0, 0, ntpServer);
 }
 
 void loop()
 {
-  delay(1000);
-  printLocalTime();
+    delay(1000);
+    printLocalTime();
+    
+    //disconnect WiFi as it's no longer needed
+    WiFi.disconnect(true);
+    WiFi.mode(WIFI_OFF);
+    
+    /* EOP */
+    while(-1);
 }
+
+
+
+
+void printLocalTime(void)
+{
+    time_t now;
+    struct tm timeinfo;
+    if (!getLocalTime(&timeinfo))
+    {
+    Serial.println("Failed to obtain time");
+    }
+    else
+    {
+        time(&now);
+        Serial.print("Epoch: 0x");
+        Serial.print(now, HEX);
+        Serial.print(" (original)");
+        Serial.print("    0x");
+        Serial.print( ((uint32_t)(now)), HEX);
+        Serial.println(" (casted)");
+    }
+    
+}
+
