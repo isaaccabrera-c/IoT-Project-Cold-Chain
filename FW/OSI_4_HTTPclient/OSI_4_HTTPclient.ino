@@ -4,6 +4,7 @@
 #include "myCredentials.h"
 #include "PCT2075.h"
 #include <stdint.h>
+#include <time.h>
 #include <Wire.h>
 ////////////////////////////////////////////////////////////////
 
@@ -25,12 +26,15 @@
 #define EEPROM_DB_WP_pin    15
 
 /* Define Travel ID */
-#define CURRENT_TRAVEL_ID   0xC0CA
+#define CURRENT_TRAVEL_ID   0x1234    
 
 /* Conditional posting */
 #define POST_2_SERVER_EN
 /* Post delay to avoid errors */
 #define POST_DELAY  250
+
+/* Wifi connection timeout (ms) */
+#define WIFI_TIMEOUT        5000
 ////////////////////////////////////////////////////////////////
 
 
@@ -53,6 +57,8 @@ typedef struct
 /* List of I2C addresses of PCT2075 devices on circuit */
 const uint8_t PCT2075_device_list[PCT2075_NUM_DEVICES] =    \
             {0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
+/* NTP server URL */
+const char ntpServer [] = "time.google.com";//"pool.ntp.org";
 ////////////////////////////////////////////////////////////////
 
 
@@ -65,6 +71,8 @@ TempRecord_t singleTempRecord;
 EE24LC256 EEPROM_DB(EEPROM_DB_I2C_ADDR, EEPROM_DB_WP_pin);
 /* EEPROM pointer */
 uint16_t EEPROM_DB_ptr;
+/* Epoch offset to add to millis() for accurate time */
+uint32_t epoch_offset;
 /* Json manager to communicate data to API Gateway */
 GatewayInterposer Json2Gateway;
 ////////////////////////////////////////////////////////////////
@@ -87,10 +95,15 @@ void setup_sensors(void);
 */
 void erase_memory(void);
 /*!
-* @brief Setup WiFi network
+* @brief Connect to a WiFi network
+* @return 0 if success, non-0 if failure
+*/
+uint8_t connect_WiFi(char* ssid, char* pwd);
+/*!
+* @brief Connect to NTP server, get epoch, calculate offset, disconnect from ntp server
 * @return void
 */
-void setup_WiFi(void);
+void synch_time(void);
 /*!
 * @brief Sample, print, and push sensor data into memory
 * @return void
@@ -101,6 +114,12 @@ void sample_and_push(void);
 * @return void
 */
 void pop_and_send(void);
+/*!
+* @brief Post Json string to API Gateway and log to serial console
+    Note: Actual posting depends on conditional compilation
+* @return void
+*/
+void post_2_APIgateway(void);
 /*!
 * @brief Dump the entire content of the EEPROM into the Serial console
 * @return void
@@ -120,22 +139,12 @@ void setup()
     /* Erase EEPROM */
     erase_memory();
     
-    /* Setup WiFi */
-    setup_WiFi();
+    /* Synch time */
+    synch_time();
 
     // /* Test */
-    // Json2Gateway.reset();
-    // Json2Gateway.setSize(1);
-    // Json2Gateway.setTravelID(1, 0x1234);
-    // Json2Gateway.setSensorID(1, 0x01);
-    // Json2Gateway.setTempture(1, 0x1E00);
-    // Json2Gateway.setTimestmp(1, millis() );
-    // uint8_t test_http_cc = Json2Gateway.post();
-    // Serial.println("");
-    // Serial.println("----HTTP TEST----");
-    // Serial.print("    cc = 0x");
-    // Serial.println(test_http_cc, HEX);
-    // Serial.println("");
+    // Serial.print("WL_CONNECTED = 0x");
+    // Serial.println(WL_CONNECTED, HEX);
 }
 
 
@@ -150,6 +159,12 @@ void loop()
     
     /* Dump memory */
     // dump_memory();
+    
+    /* Turn off WiFi */
+    WiFi.mode(WIFI_OFF);
+    Serial.println("");
+    Serial.println("****WiFi:   OFF****");
+    Serial.println("");
     
     /* EOP */
     while(-1);
@@ -227,31 +242,117 @@ void erase_memory(void)
     Serial.print("Memory Erase:   ");
     Serial.println( 0 == memory_erase_cc ? "PASS" : "FAIL" );
 }
-void setup_WiFi(void)
+uint8_t connect_WiFi(char* ssid, char* pwd)
 {
     /* Signal task beginning */
     Serial.println("");
-    Serial.println("Connecting to WiFi: BEGIN");
+    Serial.println("Connecting to WiFi network: BEGIN");
     
     /* Connect to Wifi newtork */
-    WiFi.begin(mySSID, myPSWD);
+    WiFi.begin(ssid, pwd);
     
-    /* Wait until connection is successful */
-    Serial.print("    ");
-    while(WiFi.status() != WL_CONNECTED) 
+    /* Wait for connection to establish */
+    delay(WIFI_TIMEOUT);
+    
+    /* Get status */
+    uint8_t wifi_status = WiFi.status();
+    uint8_t wifi_cc = (WL_CONNECTED == wifi_status) ? 0 : -1;
+    
+    /* If success log IP */
+    if(WL_CONNECTED == wifi_status)
     {
-        delay(500);
-        Serial.print(".");
+        Serial.print("    IP Address: ");
+        Serial.println( WiFi.localIP() );
+    }
+    /* If error warn user */
+    else
+    {
+        Serial.println("    WiFi timeout: could not connect :(");
     }
     
-    /* Log connection info */
+    /* Signal task completion */
+    Serial.print("Connecting to WiFi network: ");
+    Serial.println( WL_CONNECTED == wifi_status ? "PASS" : "FAIL" );
+    
+    /* Return cc */
+    return wifi_cc;
+}
+void synch_time(void)
+{    
+    /* Connect to Wifi */
+    uint8_t wifi_cc = -1;
+    wifi_cc = connect_WiFi(SSID_departure_point, PSWD_departure_point);
+    
+    /* Synch cc */
+    uint8_t synch_cc = -1;
+    
+    /* Signal begginning of task */
     Serial.println("");
-    Serial.println("    Connected!");
-    Serial.print("    Network IP Address: ");
-    Serial.println( WiFi.localIP() );
+    Serial.println("NTP synch:  BEGIN");
+    
+    /* Attempt synch only if WiFi connection succeeded */
+    if(0 == wifi_cc)
+    {
+        /* Configure NTP server */
+        configTime(0, 0, ntpServer);
+        
+        /* Variables to store time */
+        time_t now;
+        struct tm timeinfo;
+        
+        /* If synch is successful */
+        if( getLocalTime(&timeinfo) )
+        {
+            /* Extract epoch */
+            time(&now);
+            /* Calculate offset */
+            epoch_offset = ((uint32_t)(now)) - millis();
+            /* Set cc to pass */
+            synch_cc = 0;
+            /* Log */
+            Serial.println("    Success!");
+            Serial.print("    Epoch offset = 0x");
+            Serial.println(epoch_offset, HEX);
+        }
+        /* If synch fails */
+        else
+        {
+            /* Set offset to 0 */
+            epoch_offset = 0;
+            /* Log */
+            Serial.println("    fail");
+            Serial.print("    could not connect to \"");
+            Serial.print( ntpServer );
+            Serial.println("\"");
+            Serial.print("    epoch offset = 0x");
+            Serial.println(epoch_offset, HEX);
+        }
+        
+        /* Disconnect from wifi */
+        WiFi.disconnect(true);
+    }
+    /* Log failure if wifi connection could not be stablished */
+    else
+    {
+        /* Set offset to 0 */
+        epoch_offset = 0;
+            
+        /* Log */
+        Serial.println("    fail");
+        Serial.println("    no wifi connection");
+        Serial.print("    epoch offset = 0x");
+        Serial.println(epoch_offset, HEX);
+    }
     
     /* Signal task completion */
-    Serial.println("Connecting to WiFi: DONE");
+    Serial.print("NTP synch:  ");
+    Serial.println( 0 == synch_cc ? "PASS" : "FAIL" );
+    
+    /* Turn off WiFi */
+    WiFi.mode(WIFI_OFF);
+    Serial.println("");
+    Serial.println("****WiFi:   OFF****");
+    
 }
 void sample_and_push(void)
 {
@@ -278,10 +379,11 @@ void sample_and_push(void)
             /* Fill in record */
             singleTempRecord.PCT2075_device         = PCT2075_device_list[i];
             singleTempRecord.temp_reg_reading       = PCT2075_Mgr.readTempReg( PCT2075_device_list[i] );
-            singleTempRecord.timestamp_unix_epoch  += millis();
+            singleTempRecord.timestamp_unix_epoch   = millis() + epoch_offset;
+            singleTempRecord.zeros                  = 0;
             
             /* Log */
-            Serial.print("Sensor 0x");
+            Serial.print("    Sensor 0x");
             Serial.print(singleTempRecord.PCT2075_device, HEX);
             Serial.print(" : 0x");
             Serial.print(singleTempRecord.temp_reg_reading, HEX);
@@ -294,7 +396,7 @@ void sample_and_push(void)
             
             /* Push into memory */
             uint8_t EE_cc = EEPROM_DB.write(EEPROM_DB_ptr, sizeof(TempRecord_t), ((uint8_t*)(&singleTempRecord)) );
-            Serial.print("    Store into EEPROM cc = 0x");
+            Serial.print("        Store into EEPROM cc = 0x");
             Serial.println(EE_cc, HEX);
             EEPROM_DB_ptr += sizeof(TempRecord_t);
         }
@@ -305,6 +407,21 @@ void sample_and_push(void)
 }
 void pop_and_send(void)
 {
+    /* Turn on WiFi */
+    WiFi.mode(WIFI_STA);
+    Serial.println("");
+    Serial.println("****WiFi:   ON****");
+    
+    /* Wait until WiFi connection is available */
+    Serial.println("");
+    Serial.println("****Blocking wait for WiFi connection****");
+    uint8_t wifi_cc = -1;
+    while(0 != wifi_cc)
+    {
+        delay(WIFI_TIMEOUT);
+        wifi_cc = connect_WiFi(SSID_arrival_point, PSWD_arrival_point);
+    }
+    
     /* Signal beginning of task */
     Serial.println("");
     Serial.println("Pop and Send:   BEGIN");
@@ -332,11 +449,11 @@ void pop_and_send(void)
         if(0 != singleTempRecord.zeros) break;
         
         /* Log */
-        Serial.print("Reading ");
+        Serial.print("    Reading ");
         Serial.print( sizeof(TempRecord_t) );
         Serial.print(" bytes from memory  cc = 0x");
         Serial.println(EE_cc);
-        Serial.print("    Sensor 0x");
+        Serial.print("        Sensor 0x");
         Serial.print(singleTempRecord.PCT2075_device, HEX);
         Serial.print(" reported ");
         Serial.print( PCT2075_Mgr.decodeTempReg(singleTempRecord.temp_reg_reading) );
@@ -353,42 +470,56 @@ void pop_and_send(void)
         Json2Gateway.setSize( n + 1 );
         
         /* Flush json file if full */
-        if(Json2Gateway.getSize() == NUM_JSON_OBJ)
-        {
-            /* Print Json string*/
-            Json2Gateway.printJson();
-            
-            /* Send Json to API Gateway */
-            #ifdef POST_2_SERVER_EN
-            delay(POST_DELAY);
-            uint8_t http_cc = Json2Gateway.post();
-            Serial.println("    HTTP Post:  BEGIN");
-            Serial.print("        http.post cc = 0x");
-            Serial.println(http_cc, HEX);
-            Serial.print("    HTTP Post:  ");
-            Serial.println( (0xFF == http_cc) ? "FAIL" : "PASS" );
-            Serial.println("");
-            #endif
-            
-            /* Reset Json string */
-            Json2Gateway.reset();
-        }
+        if(Json2Gateway.getSize() == NUM_JSON_OBJ) post_2_APIgateway();
         
     }
     
     /* Flush json file if not empty */
-    if(Json2Gateway.getSize() != 0)
-    {
-        /* Send Json to API Gateway */
-        #ifdef POST_2_SERVER_EN
+    if(Json2Gateway.getSize() != 0) post_2_APIgateway();
+    
+    /* Signal completion of task */
+    Serial.println("Pop and Send:   DONE");
+    
+}
+void post_2_APIgateway(void)
+{
+    /* Signal beginning of task */
+    Serial.println("");
+    Serial.println("    HTTP Post:  BEGIN");
+    
+    /* Send Json to API Gateway */
+    #ifdef POST_2_SERVER_EN
+        /* Wait until http handler is free */
         delay(POST_DELAY);
-        Json2Gateway.post();
-        #endif
-        /* Print Json string*/
-        Json2Gateway.printJson();
-        /* Reset Json string */
-        Json2Gateway.reset();
-    }
+        
+        /* Post json string */
+        uint8_t http_cc = Json2Gateway.post();
+        
+        /* Log cc */
+        Serial.print("        http.post cc = 0x");
+        Serial.println(http_cc, HEX);
+        
+    #else
+        /* Signal mock send */
+        Serial.println("        mock mode ON");
+
+    #endif
+    
+    /* Print Json string*/
+    Serial.print("        ");
+    Json2Gateway.printJson();
+    
+    /* Reset Json string */
+    Json2Gateway.reset();
+    
+    /* Signal completion of task */
+    Serial.print("    HTTP Post:  ");
+    #ifdef POST_2_SERVER_EN
+        Serial.println( (0xFF == http_cc) ? "FAIL" : "PASS" );
+    #else
+        Serial.println("DONE");
+    #endif
+    Serial.println("");
 }
 void dump_memory(void)
 {
