@@ -1,5 +1,4 @@
 <!doctype html>
-<script data-require="chart.js@*" data-semver="1.0.2" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script>
 <html lang="en">
 
 <head>
@@ -7,15 +6,19 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.2.0/chart.js" integrity="sha512-opXrgVcTHsEVdBUZqTPlW9S8+99hNbaHmXtAdXXc61OUU6gOII5ku/PzZFqexHXc3hnK8IrJKHo+T7O4GRIJcw==" crossorigin="anonymous"></script>
   <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
     integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 </head>
 
 <body>
-  <div>Hola mundo</div>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <form action="">
+    <div>Consultar temperatura</div><br>
+    <label for="id">ID:</label>
+    <input type="text" id="id" name="Id">
+    <input type="submit" value="Submit">
+  </form> 
   <p id="temp">
     <!-- <script>
       const data = require('./temperatureData')
@@ -29,38 +32,89 @@
       Plotly.newPlot('temp', datos);
     </script> -->
   </p>
-  <canvas id="temp" width="600" height="400"></canvas>
+  
+  <div style="width:700px"><canvas id="chart" width="700" height="550"></canvas></div>
   <script>
-  var Chart = require('chart.js');
-  var tempData = {
-  	labels : ["10:00","10:10","10:20","10:30","10:40","10:50"],
-  	datasets : [
-  		{
-  			fillColor : "rgba(172,194,132,0.4)",
-  			strokeColor : "#ACC26D",
-  			pointColor : "#fff",
-  			pointStrokeColor : "#9DB86D",
-  			data : [20,15,9,21,30,24]
-  			
-  		}
-  	]
-  }
+    var temp = document.getElementById('chart').getContext('2d');
+    var Chart = new Chart(temp,{
+      type:"line",
+      data:{
+        labels : ["10:00","10:10","10:20","10:30","10:40","10:50"],
+        // xAxisID:"time",
+        // yAxisID:"temperature",
+        datasets : [
+          {
+            label:'sensor1',
+            data : [20,15,7,21,30,24],
+            //fillColor : "rgba(172,194,132,0.4)",
+            fill: false,
+            borderColor: 'rgb(75, 192, 192)',
+          },
+          {
+            label:'sensor2',
+            data : [15,11,2,13,30,21],
+            //fillColor : "rgba(172,194,132,0.4)",
+            fill: false,
+            borderColor: 'rgb(51, 96, 255)',
+          },
+          {
+            label:'sensor3',
+            data : [1,5,9,2,15,14],
+            //fillColor : "rgba(172,194,132,0.4)",
+            fill: false,
+            borderColor: 'rgb(178, 51, 255)',
+          },
+          {
+            label:'sensor4',
+            data : [1,5,10,3,1,-2],
+            //fillColor : "rgba(172,194,132,0.4)",
+            fill: false,
+            borderColor: 'rgb(125, 23, 187 )',
+          },
+          {
+            label:'sensor5',
+            data : [0,13,19,22,12,1],
+            //fillColor : "rgba(172,194,132,0.4)",
+            fill: false,
+            borderColor: 'rgb(27, 220, 234)',
+          },
+          {
+            label:'sensor6',
+            data : [1,-5,0,2,7,11],
+            //fillColor : "rgba(172,194,132,0.4)",
+            fill: false,
+            borderColor: 'rgb(23, 88, 191)',
+          },
+          {
+            label:'sensor6',
+            data : [1,4,8,1,14,13],
+            //fillColor : "rgba(172,194,132,0.4)",
+            fill: false,
+            borderColor: 'rgb(246, 63, 229)',
+          },
+          {
+            label:'sensor7',
+            data : [10,15,19,12,25,24],
+            //fillColor : "rgba(172,194,132,0.4)",
+            fill: false,
+            borderColor: 'rgb(246, 3, 131)',
+          },
+          {
+            label:'sensor8',
+            data : [21,25,29,22,35,17],
+            //fillColor : "rgba(172,194,132,0.4)",
+            fill: false,
+            borderColor: 'rgb(246, 3, 28)',
+          },
 
-  var temp = document.getElementById('temp').getContext('2d');
-  Chart(temp).Line(tempData, {
-    animation: true,
-    animationSteps: 100,
-    animationEasing: "easeOutQuart",
-    scaleFontSize: 16,
-    responsive: true,
-    showTooltip: true,
-    tooltipTemplate: "<%if (label){%><%=label%>: <%}%><%= value %>",
-    
-    scaleShowGridLines : false,
-    bezierCurve : false,
-    pointDotRadius : 5,
 
-  });
+
+      ]
+      }
+
+    })
+    //require('chart.js');
+
 </script>
 
   <!-- Optional JavaScript -->
