@@ -18,7 +18,7 @@
 /* Number of PCT2075 devices in circuit */
 #define PCT2075_NUM_DEVICES 8
 /* Sensor sampling period in milli-seconds */
-#define SAMPLNG_PERIOD_ms   500
+#define SAMPLNG_PERIOD_ms   (20*1000)
 
 /* EEPROM I2C device address */
 #define EEPROM_DB_I2C_ADDR  0x50
@@ -26,8 +26,10 @@
 #define EEPROM_DB_WP_pin    15
 
 /* Define Travel ID */
-#define CURRENT_TRAVEL_ID   0x1234    
+#define CURRENT_TRAVEL_ID   0xF1F0    
 
+/* Samplin duration in ms */
+#define TAVEL_DURATION      (100*1000)
 /* Conditional posting */
 #define POST_2_SERVER_EN
 /* Post delay to avoid errors */
@@ -306,7 +308,7 @@ void synch_time(void)
             /* Extract epoch */
             time(&now);
             /* Calculate offset */
-            epoch_offset = ((uint32_t)(now)) - millis();
+            epoch_offset = ((uint32_t)(now)) - ( millis() / 1000 );
             /* Set cc to pass */
             synch_cc = 0;
             /* Log */
@@ -364,7 +366,7 @@ void sample_and_push(void)
     EEPROM_DB_ptr = 0;
 
     /* Sample, print, and push until signaled to stop */
-    while( 60*1000 > millis() )
+    while( TAVEL_DURATION > millis() )
     {
         /* Wait until next sample time */
         delay(SAMPLNG_PERIOD_ms);
@@ -379,7 +381,7 @@ void sample_and_push(void)
             /* Fill in record */
             singleTempRecord.PCT2075_device         = PCT2075_device_list[i];
             singleTempRecord.temp_reg_reading       = PCT2075_Mgr.readTempReg( PCT2075_device_list[i] );
-            singleTempRecord.timestamp_unix_epoch   = millis() + epoch_offset;
+            singleTempRecord.timestamp_unix_epoch   = epoch_offset + ( millis() / 1000 );
             singleTempRecord.zeros                  = 0;
             
             /* Log */
