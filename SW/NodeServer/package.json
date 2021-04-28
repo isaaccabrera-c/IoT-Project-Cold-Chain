@@ -9,7 +9,8 @@
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "plotly.js-dist": "^1.58.4",
-    "statistics.js": "^1.0.0"
+    "statistics.js": "^1.0.0",
+    "xmlhttprequest": "^1.8.0"
   },
   "devDependencies": {},
   "scripts": {
