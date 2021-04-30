@@ -10,6 +10,10 @@
 
 
 ////////////////Macros//////////////////////////////////////////
+/* Pin to signal success of different stages of process */
+#define SIGNAL_LED          2
+
+
 /* Baud rate for serial communications */
 #define UART_BAUDRATE       115200
 /* Clockspeed for I2C communication */
@@ -18,7 +22,7 @@
 /* Number of PCT2075 devices in circuit */
 #define PCT2075_NUM_DEVICES 8
 /* Sensor sampling period in milli-seconds */
-#define SAMPLNG_PERIOD_ms   (20*1000)
+#define SAMPLNG_PERIOD_ms   (5*60*1000)
 
 /* EEPROM I2C device address */
 #define EEPROM_DB_I2C_ADDR  0x50
@@ -26,17 +30,21 @@
 #define EEPROM_DB_WP_pin    15
 
 /* Define Travel ID */
-#define CURRENT_TRAVEL_ID   0xF1F0    
+#define CURRENT_TRAVEL_ID   0xABCD    
 
 /* Samplin duration in ms */
-#define TAVEL_DURATION      (100*1000)
+#define TAVEL_DURATION      (10*3600*1000)
 /* Conditional posting */
 #define POST_2_SERVER_EN
 /* Post delay to avoid errors */
-#define POST_DELAY  250
+#define POST_DELAY          500
 
 /* Wifi connection timeout (ms) */
 #define WIFI_TIMEOUT        5000
+/* NTP server max retries */
+#define NTP_MAX_RETRIES     16
+/* HTTP POST retries */
+#define HTTP_MAX_RETRIES    16
 ////////////////////////////////////////////////////////////////
 
 
@@ -77,6 +85,8 @@ uint16_t EEPROM_DB_ptr;
 uint32_t epoch_offset;
 /* Json manager to communicate data to API Gateway */
 GatewayInterposer Json2Gateway;
+/* Flag to signal if all internet transactions were successful */
+uint8_t full_internet_success;
 ////////////////////////////////////////////////////////////////
 
 
@@ -132,6 +142,10 @@ void dump_memory(void);
 
 void setup()
 {   
+    /* Setup LED */
+    pinMode(SIGNAL_LED, OUTPUT);
+    digitalWrite(SIGNAL_LED, LOW);
+
     /* Setup UART and I2C */
     setup_LSIO();
 
@@ -140,6 +154,9 @@ void setup()
     
     /* Erase EEPROM */
     erase_memory();
+    
+    /* Assume success on all internet TXN's */
+    full_internet_success = 0;
     
     /* Synch time */
     synch_time();
@@ -169,7 +186,12 @@ void loop()
     Serial.println("");
     
     /* EOP */
-    while(-1);
+    while(-1)
+    {
+        digitalWrite(SAMPLNG_PERIOD_ms, (!full_internet_success) ? HIGH : LOW);
+        delay(1000);
+        digitalWrite(SAMPLNG_PERIOD_ms, LOW);
+    }
 }
 
 
@@ -283,7 +305,11 @@ void synch_time(void)
 {    
     /* Connect to Wifi */
     uint8_t wifi_cc = -1;
-    wifi_cc = connect_WiFi(SSID_departure_point, PSWD_departure_point);
+    for(uint8_t i = 0; i < NTP_MAX_RETRIES; i++)
+    {
+        wifi_cc = connect_WiFi(SSID_departure_point, PSWD_departure_point);
+        if(0 == wifi_cc) break;
+    }
     
     /* Synch cc */
     uint8_t synch_cc = -1;
@@ -302,8 +328,18 @@ void synch_time(void)
         time_t now;
         struct tm timeinfo;
         
+        /* Synch time */
+        uint8_t ntp_cc = -1;
+        for(uint8_t i = 0; i < NTP_MAX_RETRIES; i++)
+        {
+            Serial.println("    trying to synch with NTP server...");
+            ntp_cc = getLocalTime(&timeinfo);
+            if(ntp_cc) break;
+            delay(WIFI_TIMEOUT);
+        }
+        
         /* If synch is successful */
-        if( getLocalTime(&timeinfo) )
+        if(ntp_cc)
         {
             /* Extract epoch */
             time(&now);
@@ -315,6 +351,8 @@ void synch_time(void)
             Serial.println("    Success!");
             Serial.print("    Epoch offset = 0x");
             Serial.println(epoch_offset, HEX);
+            /* Turn LED on */
+            digitalWrite(SIGNAL_LED, HIGH);
         }
         /* If synch fails */
         else
@@ -328,6 +366,8 @@ void synch_time(void)
             Serial.println("\"");
             Serial.print("    epoch offset = 0x");
             Serial.println(epoch_offset, HEX);
+            /* Add error to flag */
+            full_internet_success |= 0x01;
         }
         
         /* Disconnect from wifi */
@@ -344,6 +384,9 @@ void synch_time(void)
         Serial.println("    no wifi connection");
         Serial.print("    epoch offset = 0x");
         Serial.println(epoch_offset, HEX);
+        
+        /* Add error to flag */
+        full_internet_success |= 0x02;
     }
     
     /* Signal task completion */
@@ -495,11 +538,21 @@ void post_2_APIgateway(void)
         delay(POST_DELAY);
         
         /* Post json string */
-        uint8_t http_cc = Json2Gateway.post();
+        uint8_t http_cc = -1;
+        for(uint8_t i = 0; i < HTTP_MAX_RETRIES; i++)
+        {
+            Serial.println("        attempting HTTP post...");
+            http_cc = Json2Gateway.post();
+            if(0xFF != http_cc) break;
+            delay(WIFI_TIMEOUT);
+        }
         
         /* Log cc */
         Serial.print("        http.post cc = 0x");
         Serial.println(http_cc, HEX);
+        
+        /* Add error to flag */
+        full_internet_success |= 0x04;
         
     #else
         /* Signal mock send */
