@@ -6,19 +6,19 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.2.0/chart.js" integrity="sha512-opXrgVcTHsEVdBUZqTPlW9S8+99hNbaHmXtAdXXc61OUU6gOII5ku/PzZFqexHXc3hnK8IrJKHo+T7O4GRIJcw==" crossorigin="anonymous"></script>
+  
   <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
     integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 </head>
 
 <body>
-  <form action="">
+  <form>
     <div>Consultar temperatura</div><br>
     <label for="id">ID:</label>
-    <input type="text" id="id" name="Id">
-    <input type="submit" value="Submit">
-  </form> 
+    <input type="text" id="input" name="Id">
+    <input type="button" id="btn" value="Submit">
+  </form>
   <p id="temp">
     <!-- <script>
       const data = require('./temperatureData')
@@ -32,93 +32,157 @@
       Plotly.newPlot('temp', datos);
     </script> -->
   </p>
-  
+
   <div style="width:700px"><canvas id="chart" width="700" height="550"></canvas></div>
-  <script>
-    var temp = document.getElementById('chart').getContext('2d');
-    var Chart = new Chart(temp,{
-      type:"line",
-      data:{
-        labels : ["10:00","10:10","10:20","10:30","10:40","10:50"],
-        // xAxisID:"time",
-        // yAxisID:"temperature",
-        datasets : [
-          {
-            label:'sensor1',
-            data : [20,15,7,21,30,24],
-            //fillColor : "rgba(172,194,132,0.4)",
-            fill: false,
-            borderColor: 'rgb(75, 192, 192)',
-          },
-          {
-            label:'sensor2',
-            data : [15,11,2,13,30,21],
-            //fillColor : "rgba(172,194,132,0.4)",
-            fill: false,
-            borderColor: 'rgb(51, 96, 255)',
-          },
-          {
-            label:'sensor3',
-            data : [1,5,9,2,15,14],
-            //fillColor : "rgba(172,194,132,0.4)",
-            fill: false,
-            borderColor: 'rgb(178, 51, 255)',
-          },
-          {
-            label:'sensor4',
-            data : [1,5,10,3,1,-2],
-            //fillColor : "rgba(172,194,132,0.4)",
-            fill: false,
-            borderColor: 'rgb(125, 23, 187 )',
-          },
-          {
-            label:'sensor5',
-            data : [0,13,19,22,12,1],
-            //fillColor : "rgba(172,194,132,0.4)",
-            fill: false,
-            borderColor: 'rgb(27, 220, 234)',
-          },
-          {
-            label:'sensor6',
-            data : [1,-5,0,2,7,11],
-            //fillColor : "rgba(172,194,132,0.4)",
-            fill: false,
-            borderColor: 'rgb(23, 88, 191)',
-          },
-          {
-            label:'sensor6',
-            data : [1,4,8,1,14,13],
-            //fillColor : "rgba(172,194,132,0.4)",
-            fill: false,
-            borderColor: 'rgb(246, 63, 229)',
-          },
-          {
-            label:'sensor7',
-            data : [10,15,19,12,25,24],
-            //fillColor : "rgba(172,194,132,0.4)",
-            fill: false,
-            borderColor: 'rgb(246, 3, 131)',
-          },
-          {
-            label:'sensor8',
-            data : [21,25,29,22,35,17],
-            //fillColor : "rgba(172,194,132,0.4)",
-            fill: false,
-            borderColor: 'rgb(246, 3, 28)',
-          },
+  <!--<script>
+    const HTTTPMethods = {
+      "put": "PUT",
+      "post": "POST",
+      "get": "GET",
+      "delete": "DELETE"
+    }
 
 
+    const APIURL = window.location.protocol + '//' + window.location.host + '/';
 
-      ]
+    function sendHTTPRequest(urlAPI, data, method, cbOK, cbError) {
+      // 1. Crear XMLHttpRequest object
+      let xhr = new XMLHttpRequest();
+      // 2. Configurar:  PUT actualizar archivo
+      xhr.open(method, urlAPI);
+      // 3. indicar tipo de datos JSO
+      xhr.send(data);
+      // 5. Una vez recibida la respuesta del servidor
+      xhr.onload = function () {
+        if (xhr.status != 200 && xhr.status != 201) { // analizar el estatus de la respuesta HTTP 
+          // Ocurrió un error
+          cbError(xhr.status + ': ' + xhr.statusText);
+        } else {
+          //console.log(xhr.responseText); // Significa que fue exitoso
+          cbOK({
+            status: xhr.status,
+            data: xhr.responseText
+          });
+        }
+      };
+    }
+
+    function arrTemperature(params) {
+      let yuri = [];
+      for (const i of params) {
+        yuri.push(i.Temperature)
       }
+      return yuri;
+    }
 
+    //document.addEventListener('DOMContentLoaded', () => {
+    //agrega tu codigo de asignación de eventos...
+    let btn = document.getElementById('btn').addEventListener("click", (e) => {
+      let input = document.getElementById('input').value;
+      switch (input) {
+        case "":
+          alert("Ingresa un Id valido");
+          break;
+
+        default:
+
+          sendHTTPRequest(APIURL + "temp", "", HTTTPMethods.get, (result) => {
+            let tempList = [];
+
+            let yaoi = JSON.parse(result.data);
+            console.log(yaoi.sensor1)
+            for (const i of yaoi.sensor1) {
+              tempList.push(i.Timestamp);
+            }
+
+            var temp = document.getElementById('chart').getContext('2d');
+            var chart = new Chart(temp, {
+
+              type: "line",
+              data: {
+                labels: [15, 11, 2, 13, 30, 21],
+                // xAxisID:"time",
+                // yAxisID:"temperature",
+                datasets: [{
+                    label: 'sensor1',
+                    data: [15, 11, 2, 13, 30, 21],
+                    //fillColor : "rgba(172,194,132,0.4)",
+                    fill: false,
+                    borderColor: 'rgb(75, 192, 192)',
+                  },
+                  {
+                    label: 'sensor2',
+                    data: [15, 11, 2, 13, 30, 21],
+                    //fillColor : "rgba(172,194,132,0.4)",
+                    fill: false,
+                    borderColor: 'rgb(51, 96, 255)',
+                  },
+                  {
+                    label: 'sensor3',
+                    data: [1, 5, 9, 2, 15, 14],
+                    //fillColor : "rgba(172,194,132,0.4)",
+                    fill: false,
+                    borderColor: 'rgb(178, 51, 255)',
+                  },
+                  {
+                    label: 'sensor4',
+                    data: [1, 5, 10, 3, 1, -2],
+                    //fillColor : "rgba(172,194,132,0.4)",
+                    fill: false,
+                    borderColor: 'rgb(125, 23, 187 )',
+                  },
+                  {
+                    label: 'sensor5',
+                    data: [0, 13, 19, 22, 12, 1],
+                    //fillColor : "rgba(172,194,132,0.4)",
+                    fill: false,
+                    borderColor: 'rgb(27, 220, 234)',
+                  },
+                  {
+                    label: 'sensor6',
+                    data: [1, -5, 0, 2, 7, 11],
+                    //fillColor : "rgba(172,194,132,0.4)",
+                    fill: false,
+                    borderColor: 'rgb(23, 88, 191)',
+                  },
+                  {
+                    label: 'sensor6',
+                    data: [1, 4, 8, 1, 14, 13],
+                    //fillColor : "rgba(172,194,132,0.4)",
+                    fill: false,
+                    borderColor: 'rgb(246, 63, 229)',
+                  },
+                  {
+                    label: 'sensor7',
+                    data: [10, 15, 19, 12, 25, 24],
+                    //fillColor : "rgba(172,194,132,0.4)",
+                    fill: false,
+                    borderColor: 'rgb(246, 3, 131)',
+                  },
+                  {
+                    label: 'sensor8',
+                    data: [21, 25, 29, 22, 35, 17],
+                    //fillColor : "rgba(172,194,132,0.4)",
+                    fill: false,
+                    borderColor: 'rgb(246, 3, 28)',
+                  },
+                ]
+              }
+
+            })
+
+
+          }, (err) => {
+            console.log(err)
+          })
+          break;
+      }
     })
-    //require('chart.js');
-
-</script>
+  </script>-->
 
   <!-- Optional JavaScript -->
   <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+  <script src="./ui.js"></script>
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
     integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous">
   </script>
@@ -128,6 +192,10 @@
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
     integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous">
   </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.2.0/chart.js"
+  integrity="sha512-opXrgVcTHsEVdBUZqTPlW9S8+99hNbaHmXtAdXXc61OUU6gOII5ku/PzZFqexHXc3hnK8IrJKHo+T7O4GRIJcw=="
+  crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script> 
 </body>
 
 </html>
